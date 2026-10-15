@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "conformal-survival"
+version = "0.1.0.dev0"
+description = "Conformal lower prediction bounds for survival times under censoring"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Hanwen Zhang" }]
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24", "scipy>=1.10", "scikit-learn>=1.3"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Intended Audience :: Science/Research",
+]
+
+[project.optional-dependencies]
+# scikit-survival supplies Cox / random survival forest models; it is optional so
+# the core installs anywhere (its `ecos` dependency has no Apple-silicon wheel).
+sksurv = ["scikit-survival>=0.22"]
+dev = ["pytest", "pandas", "matplotlib"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
