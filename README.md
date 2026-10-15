@@ -1,54 +1,34 @@
 # conformal-survival
 
-**A survival model tells you how long a patient will live. It doesn't tell you how often it's wrong.**
+Distribution-free **lower prediction bounds for survival times** under censoring,
+in Python.
 
-This package takes any survival model — a Cox regression, a random survival forest, anything with the
-scikit-survival interface — and turns its prediction into a statement with a guarantee attached:
+Given any survival model (Cox, random survival forest, ...), `conformal-survival`
+returns for each new individual a bound $\hat L(x)$ such that
 
-> *With 90% probability, this patient survives at least 396 days.*
+$$\mathbb{P}\big(T \ge \hat L(X)\big) \ge 1 - \alpha,$$
 
-And the guarantee holds **even when the underlying model is wrong**. That is the point of conformal
-prediction: the promise comes from the calibration procedure, not from the model being correct.
+where $T$ is the *uncensored* survival time. "With 90% probability this patient
+survives at least $\hat L(x)$ days." The guarantee does not rely on the survival
+model being correct.
 
-## Why this is harder than it sounds
+Censoring is what makes this non-trivial: the survival time is unobserved for most
+units (56-88% in the datasets below), so calibrating on the observed time is valid but
+far too conservative to be useful. The methods here recover sharp bounds by restricting
+to units with enough follow-up and correcting the resulting covariate shift.
 
-In survival data you usually never observe the thing you are trying to predict. A patient who leaves the
-study after two years tells you only *"survived at least two years"* — the true survival time is unknown.
-That is censoring, and in the datasets here 56–88% of patients are censored.
-
-The naive fix is to calibrate on what you did observe. It is valid, and it is useless: it would promise
-"at least two years" when the truth might be ten. In the simulations below, the naive bound reaches its
-coverage target but its bounds are **0–22% of the correct value**, versus 80–104% for the methods here.
-
-This package implements two recent methods that get around this. As far as I could find, neither had a
-Python implementation — the authors' reference code is in R.
+It implements two published methods. As far as I could find, there was no Python
+implementation of either; the authors' reference code is in R.
 
 | Estimator | Data required | Paper |
 |---|---|---|
 | `ConformalSurvivalLPB` | Type-I censoring: censoring time $C$ known for **every** unit (e.g. administrative end of follow-up) | Candès, Lei & Ren (2023), *Conformalized survival analysis*, JRSS-B ([arXiv:2103.09763](https://arxiv.org/abs/2103.09763)); R: [`cfsurvival`](https://github.com/zhimeir/cfsurvival) |
 | `DRConformalSurvivalLPB` | Ordinary right-censored data $(X, \min(T,C), \mathbb 1\{T \le C\})$ | Sesia & Svetnik (2025), *Doubly robust conformalized survival analysis with right-censored data*, ICML ([arXiv:2412.09729](https://arxiv.org/abs/2412.09729)); R: [`conformal_survival`](https://github.com/msesia/conformal_survival) |
 
-## Does it actually work?
-
-On the GBSG2 breast-cancer cohort (686 patients, 56% censored), over 50 random train/test splits:
-
-| | Promised | Delivered |
-|---|---|---|
-| Plain Cox model | 90% | **88.6%** |
-| After conformal calibration | 90% | **90.6–91.8%** |
-
-In simulation, with a deliberately misspecified survival model, an uncalibrated random survival forest
-delivers **81.4–84.7%** coverage against a 90% target; after calibration it delivers **90.1–92.9%**.
-A negative control confirms the calibration is doing the work: remove the censoring weights and coverage
-collapses to 68%.
-
-Full numbers in [Validation](#validation) below.
-
-The formal guarantee: for a new individual, the bound $\hat L(x)$ satisfies
-
-$$\mathbb{P}\big(T \ge \hat L(X)\big) \ge 1 - \alpha,$$
-
-where $T$ is the *uncensored* survival time.
+On GBSG2 (686 breast-cancer patients, 56% censored), an uncalibrated Cox model delivers
+88.6% coverage against a 90% target; after calibration, 90.6-91.8%. In simulation with a
+misspecified model, an uncalibrated random survival forest delivers 81.4-84.7%, and
+90.1-92.9% after calibration. Details in [Validation](#validation).
 
 ## Example
 
